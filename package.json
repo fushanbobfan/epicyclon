@@ -4,7 +4,7 @@
   "description": "Draw a shape and watch a chain of rotating circles retrace it using the discrete Fourier transform.",
   "type": "module",
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test",
     "serve": "node scripts/serve.js"
   },
   "keywords": [
