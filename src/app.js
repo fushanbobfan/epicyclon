@@ -135,12 +135,72 @@ function initPresetMenu() {
 
 // --- wiring ---------------------------------------------------------------
 
+const hint = document.getElementById('hint');
+const shapeSelect = document.getElementById('shape');
+
 const playPause = document.getElementById('playPause');
 playPause.addEventListener('click', () => {
   state.playing = !state.playing;
   playPause.textContent = state.playing ? 'Pause' : 'Play';
   playPause.setAttribute('aria-pressed', String(!state.playing));
 });
+
+const $ = (id) => document.getElementById(id);
+
+const termsInput = $('terms');
+const termsOut = $('termsOut');
+if (termsInput) {
+  termsInput.max = String(state.sampleCount / 2);
+  termsInput.value = String(state.termCount);
+  termsOut.textContent = String(state.termCount);
+  termsInput.addEventListener('input', () => {
+    state.termCount = Number(termsInput.value);
+    termsOut.textContent = termsInput.value;
+    refreshActiveTerms();
+    state.trace = [];
+  });
+}
+
+const speedInput = $('speed');
+const speedOut = $('speedOut');
+if (speedInput) {
+  speedInput.value = String(state.speed);
+  speedOut.textContent = `${state.speed.toFixed(2)}×`;
+  speedInput.addEventListener('input', () => {
+    state.speed = Number(speedInput.value);
+    speedOut.textContent = `${state.speed.toFixed(2)}×`;
+  });
+}
+
+const toggleMap = {
+  showCircles: 'circles',
+  showChain: 'chain',
+  showInput: 'input',
+};
+for (const [id, key] of Object.entries(toggleMap)) {
+  const box = $(id);
+  if (!box) continue;
+  box.checked = state.show[key];
+  box.addEventListener('change', () => {
+    state.show[key] = box.checked;
+    render();
+  });
+}
+
+const clearBtn = $('clear');
+if (clearBtn) {
+  clearBtn.addEventListener('click', () => {
+    state.path = [];
+    state.terms = [];
+    state.active = [];
+    state.trace = [];
+    state.draft = [];
+    state.currentShape = null;
+    if (shapeSelect) shapeSelect.value = '';
+    if (hint) hint.textContent = 'Draw a shape here with your mouse or finger.';
+    render();
+  });
+}
 
 // Track the real rendered size instead of guessing at load time.
 if (typeof ResizeObserver !== 'undefined') {
@@ -156,8 +216,15 @@ window.addEventListener('resize', () => {
   fitCanvas();
 });
 
-const hint = document.getElementById('hint');
-const shapeSelect = document.getElementById('shape');
+if (shapeSelect) {
+  shapeSelect.addEventListener('change', () => {
+    const name = shapeSelect.value;
+    if (name && SHAPES[name]) {
+      loadShape(name);
+      if (hint) hint.textContent = 'Or draw your own shape on the canvas.';
+    }
+  });
+}
 
 attachDrawing(canvas, {
   getView: () => ({ w: state.viewW, h: state.viewH }),
