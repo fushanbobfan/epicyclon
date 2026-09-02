@@ -1,0 +1,25 @@
+{
+  "name": "epicyclon",
+  "version": "0.1.0",
+  "description": "Draw a shape and watch a chain of rotating circles retrace it using the discrete Fourier transform.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/",
+    "serve": "node scripts/serve.js"
+  },
+  "keywords": [
+    "fourier",
+    "epicycles",
+    "dft",
+    "visualization",
+    "creative-coding",
+    "canvas"
+  ],
+  "license": "MIT",
+  "author": "Jiayi Fan",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fushanbobfan/epicyclon.git"
+  },
+  "private": false
+}
