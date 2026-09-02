@@ -21,6 +21,10 @@ export function drawScene(ctx, scene, opts) {
     strokePath(ctx, scene.input, colors.inputPath, 1.5, true);
   }
 
+  if (scene.draft && scene.draft.length > 1) {
+    strokePath(ctx, scene.draft, colors.inputPath, 2, false);
+  }
+
   if (scene.chain && scene.chain.length > 1) {
     if (opts.showCircles) drawCircles(ctx, scene.chain, colors.circle);
     if (opts.showChain) drawRadii(ctx, scene.chain, colors.radius);

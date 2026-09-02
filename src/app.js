@@ -3,6 +3,7 @@ import { chainPoints } from './epicycles.js';
 import { resample } from './resample.js';
 import { SHAPES } from './shapes.js';
 import { drawScene, readColors } from './render.js';
+import { attachDrawing } from './ui.js';
 
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
@@ -21,6 +22,8 @@ const state = {
   termCount: 64,
   sampleCount: 512,
   currentShape: 'star',
+  /** raw stroke being drawn right now, empty when idle */
+  draft: [],
   show: { circles: true, chain: true, input: false },
   colors: readColors(canvas),
   viewW: canvas.width,
@@ -50,6 +53,13 @@ function loadShape(name) {
   setPath(resample(raw, state.sampleCount, { closed: true }));
 }
 
+/** Adopt a freehand stroke (raw centered points) as the traced path. */
+function useStroke(rawPoints) {
+  if (!rawPoints || rawPoints.length < 3) return;
+  state.currentShape = null;
+  setPath(resample(rawPoints, state.sampleCount, { closed: true }));
+}
+
 /** How many trace points make one full loop at the current speed. */
 function traceBudget() {
   return Math.max(120, Math.round((LOOP_SECONDS * 60) / Math.max(state.speed, 0.05)));
@@ -71,7 +81,7 @@ function render() {
   }
   drawScene(
     ctx,
-    { chain, trace: state.trace, input: state.path },
+    { chain, trace: state.trace, input: state.path, draft: state.draft },
     {
       showCircles: state.show.circles,
       showChain: state.show.chain,
@@ -144,6 +154,28 @@ if (typeof ResizeObserver !== 'undefined') {
 
 window.addEventListener('resize', () => {
   fitCanvas();
+});
+
+const hint = document.getElementById('hint');
+const shapeSelect = document.getElementById('shape');
+
+attachDrawing(canvas, {
+  getView: () => ({ w: state.viewW, h: state.viewH }),
+  onBegin: () => {
+    state.draft = [];
+    state.trace = [];
+    state.active = [];
+  },
+  onPoint: (pt) => {
+    state.draft.push(pt);
+    render();
+  },
+  onCommit: (points) => {
+    state.draft = [];
+    useStroke(points);
+    if (shapeSelect) shapeSelect.value = '';
+    if (hint) hint.textContent = 'Nice. Adjust the circle count to sharpen or smooth it.';
+  },
 });
 
 if (window.matchMedia) {
