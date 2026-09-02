@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Draw a shape and watch a chain of rotating circles retrace it with the discrete Fourier transform."
+    />
+    <title>epicyclon — Fourier epicycle drawing</title>
+    <link rel="stylesheet" href="src/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>epicyclon</h1>
+      <p class="tagline">
+        Draw a loop. A chain of rotating circles replays it, one Fourier term
+        per circle.
+      </p>
+    </header>
+
+    <main>
+      <div class="stage">
+        <canvas
+          id="stage"
+          width="720"
+          height="540"
+          role="img"
+          aria-label="Drawing canvas. Draw a closed shape with the pointer, then watch the epicycle chain retrace it."
+        ></canvas>
+        <p id="hint" class="hint">Draw a shape here with your mouse or finger.</p>
+      </div>
+
+      <form id="controls" class="controls" aria-label="Playback controls">
+        <div class="row">
+          <button type="button" id="playPause" class="primary">Pause</button>
+          <button type="button" id="clear">Clear</button>
+        </div>
+
+        <label class="field">
+          <span>Example shape</span>
+          <select id="shape">
+            <option value="">— none —</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Circles: <output id="termsOut">64</output></span>
+          <input type="range" id="terms" min="1" max="128" value="64" step="1" />
+        </label>
+
+        <label class="field">
+          <span>Speed: <output id="speedOut">1.0×</output></span>
+          <input type="range" id="speed" min="0" max="3" value="1" step="0.05" />
+        </label>
+
+        <fieldset class="field toggles">
+          <legend>Show</legend>
+          <label><input type="checkbox" id="showCircles" checked /> Circles</label>
+          <label><input type="checkbox" id="showChain" checked /> Radii</label>
+          <label><input type="checkbox" id="showInput" /> Original path</label>
+        </fieldset>
+      </form>
+    </main>
+
+    <footer class="footer">
+      <a href="https://github.com/fushanbobfan/epicyclon">Source on GitHub</a>
+      <span>·</span>
+      <span>MIT licensed</span>
+    </footer>
+
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>
