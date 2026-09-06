@@ -1,5 +1,5 @@
 import { dft, topTerms } from './dft.js';
-import { chainPoints } from './epicycles.js';
+import { chainPoints, tracePath } from './epicycles.js';
 import { resample } from './resample.js';
 import { SHAPES } from './shapes.js';
 import { drawScene, readColors } from './render.js';
@@ -32,16 +32,36 @@ const state = {
 
 const LOOP_SECONDS = 6;
 
+const reduceMotion =
+  window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+
+function announce(message) {
+  const status = document.getElementById('status');
+  if (status) status.textContent = message;
+}
+
 function setPath(points) {
   state.path = points;
   state.terms = dft(points);
-  refreshActiveTerms();
   state.t = 0;
   state.trace = [];
+  refreshActiveTerms();
 }
 
 function refreshActiveTerms() {
   state.active = topTerms(state.terms, state.termCount);
+  syncStaticTrace();
+}
+
+/**
+ * When the viewer prefers reduced motion, show the finished curve as a still
+ * image instead of animating a pen around it.
+ */
+function syncStaticTrace() {
+  if (reduceMotion && reduceMotion.matches && state.active.length) {
+    state.trace = tracePath(state.active, 720);
+    state.t = 0;
+  }
 }
 
 function loadShape(name) {
@@ -139,10 +159,25 @@ const hint = document.getElementById('hint');
 const shapeSelect = document.getElementById('shape');
 
 const playPause = document.getElementById('playPause');
-playPause.addEventListener('click', () => {
-  state.playing = !state.playing;
-  playPause.textContent = state.playing ? 'Pause' : 'Play';
-  playPause.setAttribute('aria-pressed', String(!state.playing));
+
+function setPlaying(next) {
+  state.playing = next;
+  playPause.textContent = next ? 'Pause' : 'Play';
+  playPause.setAttribute('aria-pressed', String(!next));
+  announce(next ? 'Playing' : 'Paused');
+  if (!next) syncStaticTrace();
+}
+
+playPause.addEventListener('click', () => setPlaying(!state.playing));
+
+canvas.addEventListener('keydown', (ev) => {
+  if (ev.key === ' ' || ev.key === 'Enter') {
+    ev.preventDefault();
+    setPlaying(!state.playing);
+  } else if (ev.key === 'r' || ev.key === 'R') {
+    ev.preventDefault();
+    clearBtn?.click();
+  }
 });
 
 const $ = (id) => document.getElementById(id);
@@ -156,8 +191,9 @@ if (termsInput) {
   termsInput.addEventListener('input', () => {
     state.termCount = Number(termsInput.value);
     termsOut.textContent = termsInput.value;
-    refreshActiveTerms();
     state.trace = [];
+    refreshActiveTerms();
+    announce(`${state.termCount} circles`);
   });
 }
 
@@ -222,6 +258,7 @@ if (shapeSelect) {
     if (name && SHAPES[name]) {
       loadShape(name);
       if (hint) hint.textContent = 'Or draw your own shape on the canvas.';
+      announce(`${SHAPES[name].label} loaded`);
     }
   });
 }
@@ -242,6 +279,7 @@ attachDrawing(canvas, {
     useStroke(points);
     if (shapeSelect) shapeSelect.value = '';
     if (hint) hint.textContent = 'Nice. Adjust the circle count to sharpen or smooth it.';
+    announce(`Traced a stroke of ${points.length} points with ${state.active.length} circles`);
   },
 });
 
@@ -258,6 +296,16 @@ if (window.matchMedia) {
 fitCanvas();
 initPresetMenu();
 loadShape(state.currentShape);
+
+if (reduceMotion && reduceMotion.matches) {
+  setPlaying(false);
+}
+if (reduceMotion) {
+  reduceMotion.addEventListener('change', (e) => {
+    if (e.matches) setPlaying(false);
+  });
+}
+
 requestAnimationFrame(frame);
 
 export { state, loadShape, tick };

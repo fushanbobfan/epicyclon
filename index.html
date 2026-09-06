@@ -25,10 +25,13 @@
           id="stage"
           width="720"
           height="540"
+          tabindex="0"
           role="img"
-          aria-label="Drawing canvas. Draw a closed shape with the pointer, then watch the epicycle chain retrace it."
+          aria-label="Drawing canvas. Draw a closed shape with the pointer, then watch the epicycle chain retrace it. Press space to play or pause, press R to reset."
+          aria-keyshortcuts="Space R"
         ></canvas>
         <p id="hint" class="hint">Draw a shape here with your mouse or finger.</p>
+        <p id="status" class="sr-only" role="status" aria-live="polite"></p>
       </div>
 
       <form id="controls" class="controls" aria-label="Playback controls">
