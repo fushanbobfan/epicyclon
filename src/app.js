@@ -41,6 +41,40 @@ function announce(message) {
   if (status) status.textContent = message;
 }
 
+/** Thin a polyline to at most `max` evenly spaced points, keeping the ends. */
+function decimate(points, max) {
+  if (points.length <= max) return points;
+  const out = [];
+  const stride = (points.length - 1) / (max - 1);
+  for (let i = 0; i < max; i++) out.push(points[Math.round(i * stride)]);
+  return out;
+}
+
+/** Encode the on-screen state as a permalink hash body. */
+function currentPermalink() {
+  return encodeState({
+    shape: state.currentShape,
+    path: state.currentShape ? null : decimate(state.path, 160),
+    termCount: state.termCount,
+    speed: state.speed,
+    show: state.show,
+  });
+}
+
+let hashTimer = 0;
+/** Fold the current state into the URL hash without touching history depth. */
+function scheduleHashUpdate() {
+  clearTimeout(hashTimer);
+  hashTimer = setTimeout(() => {
+    const body = currentPermalink();
+    try {
+      window.history.replaceState(null, '', `#${body}`);
+    } catch {
+      window.location.hash = body;
+    }
+  }, 250);
+}
+
 function setPath(points) {
   state.path = points;
   state.terms = dft(points);
@@ -195,6 +229,7 @@ if (termsInput) {
     state.trace = [];
     refreshActiveTerms();
     announce(`${state.termCount} circles`);
+    scheduleHashUpdate();
   });
 }
 
@@ -206,6 +241,7 @@ if (speedInput) {
   speedInput.addEventListener('input', () => {
     state.speed = Number(speedInput.value);
     speedOut.textContent = `${state.speed.toFixed(2)}×`;
+    scheduleHashUpdate();
   });
 }
 
@@ -221,6 +257,7 @@ for (const [id, key] of Object.entries(toggleMap)) {
   box.addEventListener('change', () => {
     state.show[key] = box.checked;
     render();
+    scheduleHashUpdate();
   });
 }
 
@@ -281,6 +318,29 @@ if (clearBtn) {
     if (shapeSelect) shapeSelect.value = '';
     if (hint) hint.textContent = 'Draw a shape here with your mouse or finger.';
     render();
+    clearTimeout(hashTimer);
+    try {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    } catch {
+      window.location.hash = '';
+    }
+  });
+}
+
+const copyLinkBtn = $('copyLink');
+if (copyLinkBtn) {
+  copyLinkBtn.addEventListener('click', async () => {
+    const url = `${window.location.origin}${window.location.pathname}#${currentPermalink()}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      announce('Link copied to the clipboard');
+      copyLinkBtn.textContent = 'Copied';
+      setTimeout(() => {
+        copyLinkBtn.textContent = 'Copy link';
+      }, 1200);
+    } catch {
+      window.prompt('Copy this link', url);
+    }
   });
 }
 
@@ -305,6 +365,7 @@ if (shapeSelect) {
       loadShape(name);
       if (hint) hint.textContent = 'Or draw your own shape on the canvas.';
       announce(`${SHAPES[name].label} loaded`);
+      scheduleHashUpdate();
     }
   });
 }
@@ -326,6 +387,7 @@ attachDrawing(canvas, {
     if (shapeSelect) shapeSelect.value = '';
     if (hint) hint.textContent = 'Nice. Adjust the circle count to sharpen or smooth it.';
     announce(`Traced a stroke of ${points.length} points with ${state.active.length} circles`);
+    scheduleHashUpdate();
   },
 });
 
