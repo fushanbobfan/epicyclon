@@ -2,12 +2,20 @@ import { dft, topTerms } from './dft.js';
 import { chainPoints, tracePath } from './epicycles.js';
 import { resample } from './resample.js';
 import { SHAPES } from './shapes.js';
-import { drawScene, readColors } from './render.js';
+import { drawScene, drawSpectrum, readColors } from './render.js';
 import { attachDrawing } from './ui.js';
 import { encodeState, decodeState } from './share.js';
+import { spectrumBars, dominantFrequency } from './spectrum.js';
 
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
+
+const spectrumCanvas = document.getElementById('spectrum');
+const sctx = spectrumCanvas ? spectrumCanvas.getContext('2d') : null;
+const spectrumCaption = document.getElementById('spectrumCaption');
+
+/** Most bars worth drawing before the strip turns to mush. */
+const MAX_SPECTRUM_BARS = 128;
 
 const state = {
   /** resampled source path in canvas-centered coordinates */
@@ -29,6 +37,8 @@ const state = {
   colors: readColors(canvas),
   viewW: canvas.width,
   viewH: canvas.height,
+  specW: spectrumCanvas ? spectrumCanvas.width : 0,
+  specH: spectrumCanvas ? spectrumCanvas.height : 0,
 };
 
 const LOOP_SECONDS = 6;
@@ -86,6 +96,30 @@ function setPath(points) {
 function refreshActiveTerms() {
   state.active = topTerms(state.terms, state.termCount);
   syncStaticTrace();
+  renderSpectrum();
+}
+
+/** Repaint the magnitude-spectrum strip and its caption. */
+function renderSpectrum() {
+  if (!sctx) return;
+  const bars = spectrumBars(state.active, Math.min(state.termCount, MAX_SPECTRUM_BARS));
+  drawSpectrum(sctx, bars, {
+    colors: state.colors,
+    width: state.specW,
+    height: state.specH,
+  });
+  if (spectrumCaption) {
+    if (bars.length === 0) {
+      spectrumCaption.textContent = 'Spectrum: no terms yet — draw or pick a shape.';
+    } else {
+      const dom = dominantFrequency(state.active);
+      const shown =
+        state.termCount > MAX_SPECTRUM_BARS ? ` (largest ${bars.length} shown)` : '';
+      spectrumCaption.textContent =
+        `Spectrum: ${bars.length} terms${shown}, ` +
+        `dominant frequency ${dom} cycle${Math.abs(dom) === 1 ? '' : 's'} per loop.`;
+    }
+  }
 }
 
 /**
@@ -174,7 +208,21 @@ function fitCanvas() {
   canvas.height = h * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   state.colors = readColors(canvas);
+  fitSpectrum(dpr);
   return changed;
+}
+
+/** Match the spectrum canvas backing store to its rendered size. */
+function fitSpectrum(dpr = window.devicePixelRatio || 1) {
+  if (!spectrumCanvas || !sctx) return;
+  const rect = spectrumCanvas.getBoundingClientRect();
+  const w = Math.max(1, Math.round(rect.width));
+  const h = Math.max(1, Math.round(rect.height));
+  state.specW = w;
+  state.specH = h;
+  spectrumCanvas.width = w * dpr;
+  spectrumCanvas.height = h * dpr;
+  sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
 function initPresetMenu() {
@@ -318,6 +366,7 @@ if (clearBtn) {
     if (shapeSelect) shapeSelect.value = '';
     if (hint) hint.textContent = 'Draw a shape here with your mouse or finger.';
     render();
+    renderSpectrum();
     clearTimeout(hashTimer);
     try {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
@@ -350,12 +399,15 @@ if (typeof ResizeObserver !== 'undefined') {
     if (fitCanvas() && state.currentShape && state.path.length) {
       loadShape(state.currentShape);
     }
+    renderSpectrum();
   });
   ro.observe(canvas);
+  if (spectrumCanvas) ro.observe(spectrumCanvas);
 }
 
 window.addEventListener('resize', () => {
   fitCanvas();
+  renderSpectrum();
 });
 
 if (shapeSelect) {
@@ -396,6 +448,7 @@ if (window.matchMedia) {
     .matchMedia('(prefers-color-scheme: dark)')
     .addEventListener('change', () => {
       state.colors = readColors(canvas);
+      renderSpectrum();
     });
 }
 

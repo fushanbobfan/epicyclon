@@ -32,6 +32,15 @@
         ></canvas>
         <p id="hint" class="hint">Draw a shape here with your mouse or finger.</p>
         <p id="status" class="sr-only" role="status" aria-live="polite"></p>
+
+        <canvas
+          id="spectrum"
+          width="720"
+          height="60"
+          role="img"
+          aria-label="Magnitude spectrum. Each bar is one kept Fourier term, tallest first; bar height is the term's amplitude relative to the largest."
+        ></canvas>
+        <p id="spectrumCaption" class="hint spectrum-caption"></p>
       </div>
 
       <form id="controls" class="controls" aria-label="Playback controls">

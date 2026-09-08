@@ -83,6 +83,44 @@ function strokePath(ctx, pts, color, lineWidth, closed) {
 }
 
 /**
+ * Draw a magnitude spectrum: one vertical bar per term, tallest first, filling
+ * the width of the context. Bars are given by `spectrumBars` from
+ * `spectrum.js` and carry a `rel` height in [0, 1].
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Array<{freq:number, amp:number, rel:number}>} bars
+ * @param {object} opts  { colors, width, height }
+ */
+export function drawSpectrum(ctx, bars, opts) {
+  const width = opts.width ?? ctx.canvas.width;
+  const height = opts.height ?? ctx.canvas.height;
+  const { colors } = opts;
+  ctx.clearRect(0, 0, width, height);
+
+  // Baseline.
+  ctx.strokeStyle = colors.circle;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, height - 0.5);
+  ctx.lineTo(width, height - 0.5);
+  ctx.stroke();
+
+  if (!bars || bars.length === 0) return;
+
+  const pad = 2;
+  const slot = width / bars.length;
+  const barW = Math.max(1, slot - pad);
+  const usableH = height - 3;
+
+  ctx.fillStyle = colors.bar;
+  for (let i = 0; i < bars.length; i++) {
+    const h = Math.max(1, bars[i].rel * usableH);
+    const x = i * slot + (slot - barW) / 2;
+    ctx.fillRect(x, height - h, barW, h);
+  }
+}
+
+/**
  * Read the theme colors from CSS custom properties so the canvas matches
  * light / dark mode.
  * @param {Element} el
@@ -95,5 +133,6 @@ export function readColors(el) {
     circle: get('--circle', 'rgba(0,0,0,0.18)'),
     radius: get('--radius', 'rgba(0,0,0,0.45)'),
     inputPath: get('--input-path', '#e8663a'),
+    bar: get('--bar', get('--accent', '#2f6fed')),
   };
 }
