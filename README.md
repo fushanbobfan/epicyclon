@@ -31,11 +31,21 @@ static server works too.
 | Circles / Radii / Original path | Toggle each drawn layer |
 | Pause / Play | Freeze or resume the animation |
 | Clear | Empty the canvas to draw again |
+| Copy link | Put a permalink to the current view on the clipboard |
 
 Keyboard: focus the canvas, then press <kbd>Space</kbd> to play or pause and
 <kbd>R</kbd> to reset. Control changes are announced through a polite live
 region, and when the browser reports `prefers-reduced-motion` the finished
 curve is shown as a still image instead of an animated pen.
+
+## Sharing a view
+
+**Copy link** encodes the whole view into the URL hash: the source curve
+(a named preset, or your stroke rounded to whole pixels), the circle count,
+the speed, and which layers are visible. Opening that link restores the view;
+the hash also updates in place as you change controls, so a browser bookmark
+captures wherever you left off. A shared stroke is resampled on load, so the
+link stays a few kilobytes even for a detailed drawing.
 
 ## Tests
 
@@ -43,9 +53,10 @@ curve is shown as a still image instead of an animated pen.
 npm test
 ```
 
-The suite (`node --test`) covers the pure math core: the DFT and its
-reconstruction guarantee, the epicycle evaluation, arc-length resampling, and
-the example-shape generators. It has no dependencies.
+The suite (`node --test`) covers the pure logic: the DFT and its
+reconstruction guarantee, the epicycle evaluation, arc-length resampling, the
+example-shape generators, and the permalink encode/decode round trip. It has
+no dependencies.
 
 ## How it works
 
@@ -68,6 +79,7 @@ the example-shape generators. It has no dependencies.
 | `src/resample.js` | Arc-length resampling of a polyline |
 | `src/shapes.js` | Built-in parametric example shapes |
 | `src/render.js` | Canvas drawing helpers and theme color lookup |
+| `src/share.js` | Encode and decode the permalink hash |
 | `src/app.js` | State, animation loop, and control wiring |
 | `src/ui.js` | Pointer drawing capture |
 | `scripts/serve.js` | Dependency-free static dev server |

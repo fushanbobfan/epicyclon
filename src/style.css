@@ -103,13 +103,16 @@ canvas {
 
 .row {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 button {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 5.5rem;
   padding: 8px 12px;
   font: inherit;
+  white-space: nowrap;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
