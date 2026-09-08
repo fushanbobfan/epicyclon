@@ -33,6 +33,10 @@ static server works too.
 | Clear | Empty the canvas to draw again |
 | Copy link | Put a permalink to the current view on the clipboard |
 
+Below the canvas, a magnitude-spectrum strip shows the kept terms as bars,
+tallest first, so you can watch amplitude fall off as circles are added; its
+caption calls out the dominant frequency.
+
 Keyboard: focus the canvas, then press <kbd>Space</kbd> to play or pause and
 <kbd>R</kbd> to reset. Control changes are announced through a polite live
 region, and when the browser reports `prefers-reduced-motion` the finished
@@ -55,8 +59,8 @@ npm test
 
 The suite (`node --test`) covers the pure logic: the DFT and its
 reconstruction guarantee, the epicycle evaluation, arc-length resampling, the
-example-shape generators, and the permalink encode/decode round trip. It has
-no dependencies.
+example-shape generators, the permalink encode/decode round trip, and the
+spectrum reduction. It has no dependencies.
 
 ## How it works
 
@@ -79,6 +83,7 @@ no dependencies.
 | `src/resample.js` | Arc-length resampling of a polyline |
 | `src/shapes.js` | Built-in parametric example shapes |
 | `src/render.js` | Canvas drawing helpers and theme color lookup |
+| `src/spectrum.js` | Reduce a term set to magnitude-spectrum bars |
 | `src/share.js` | Encode and decode the permalink hash |
 | `src/app.js` | State, animation loop, and control wiring |
 | `src/ui.js` | Pointer drawing capture |
