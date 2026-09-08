@@ -4,6 +4,7 @@ import { resample } from './resample.js';
 import { SHAPES } from './shapes.js';
 import { drawScene, readColors } from './render.js';
 import { attachDrawing } from './ui.js';
+import { encodeState, decodeState } from './share.js';
 
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
@@ -223,6 +224,51 @@ for (const [id, key] of Object.entries(toggleMap)) {
   });
 }
 
+/** Push the current control-bearing state into the DOM inputs and outputs. */
+function syncControls() {
+  if (termsInput) {
+    termsInput.value = String(state.termCount);
+    termsOut.textContent = String(state.termCount);
+  }
+  if (speedInput) {
+    speedInput.value = String(state.speed);
+    speedOut.textContent = `${state.speed.toFixed(2)}×`;
+  }
+  for (const [id, key] of Object.entries(toggleMap)) {
+    const box = $(id);
+    if (box) box.checked = state.show[key];
+  }
+  if (shapeSelect) shapeSelect.value = state.currentShape || '';
+}
+
+/**
+ * If the URL hash carries a permalink, adopt it: restore the layer toggles,
+ * term count and speed, then load either the named preset or the saved
+ * stroke. Returns true when a permalink was applied.
+ */
+function restoreFromHash() {
+  const decoded = decodeState(window.location.hash);
+  if (!decoded) return false;
+
+  state.termCount = decoded.termCount;
+  state.speed = decoded.speed;
+  state.show = { ...state.show, ...decoded.show };
+
+  if (decoded.path && decoded.path.length >= 3) {
+    state.currentShape = null;
+    useStroke(decoded.path);
+    if (hint) hint.textContent = 'Shared stroke loaded. Adjust the circle count to taste.';
+  } else if (decoded.shape && SHAPES[decoded.shape]) {
+    loadShape(decoded.shape);
+    if (hint) hint.textContent = 'Or draw your own shape on the canvas.';
+  } else {
+    return false;
+  }
+
+  syncControls();
+  return true;
+}
+
 const clearBtn = $('clear');
 if (clearBtn) {
   clearBtn.addEventListener('click', () => {
@@ -295,7 +341,9 @@ if (window.matchMedia) {
 
 fitCanvas();
 initPresetMenu();
-loadShape(state.currentShape);
+if (!restoreFromHash()) {
+  loadShape(state.currentShape);
+}
 
 if (reduceMotion && reduceMotion.matches) {
   setPlaying(false);
