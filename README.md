@@ -32,6 +32,7 @@ static server works too.
 | Pause / Play | Freeze or resume the animation |
 | Clear | Empty the canvas to draw again |
 | Copy link | Put a permalink to the current view on the clipboard |
+| Download SVG | Save the reconstructed curve as a standalone vector file |
 
 Below the canvas, a magnitude-spectrum strip shows the kept terms as bars,
 tallest first, so you can watch amplitude fall off as circles are added; its
@@ -51,6 +52,16 @@ the hash also updates in place as you change controls, so a browser bookmark
 captures wherever you left off. A shared stroke is resampled on load, so the
 link stays a few kilobytes even for a detailed drawing.
 
+## Downloading a vector copy
+
+**Download SVG** samples the epicycle chain around one full loop and writes the
+resulting curve as a single-`<path>` SVG document — no stylesheet, font, or
+script. The `viewBox` is fitted to the drawing with a small uniform margin, the
+stroke picks up the current theme's trace color, and the `<title>` records the
+source shape and circle count. Fewer circles export a smoother curve; more sharpen
+the corners, exactly as on screen. The file opens in any vector editor and is
+suitable for a pen plotter.
+
 ## Tests
 
 ```bash
@@ -59,8 +70,9 @@ npm test
 
 The suite (`node --test`) covers the pure logic: the DFT and its
 reconstruction guarantee, the epicycle evaluation, arc-length resampling, the
-example-shape generators, the permalink encode/decode round trip, and the
-spectrum reduction. It has no dependencies.
+example-shape generators, the permalink encode/decode round trip, the spectrum
+reduction, and the SVG export (path data, viewBox fitting, escaping, and
+degenerate inputs). It has no dependencies.
 
 ## How it works
 
@@ -84,6 +96,7 @@ spectrum reduction. It has no dependencies.
 | `src/shapes.js` | Built-in parametric example shapes |
 | `src/render.js` | Canvas drawing helpers and theme color lookup |
 | `src/spectrum.js` | Reduce a term set to magnitude-spectrum bars |
+| `src/svg.js` | Build a standalone SVG document from a traced curve |
 | `src/share.js` | Encode and decode the permalink hash |
 | `src/app.js` | State, animation loop, and control wiring |
 | `src/ui.js` | Pointer drawing capture |
