@@ -6,6 +6,7 @@ import { drawScene, drawSpectrum, readColors } from './render.js';
 import { attachDrawing } from './ui.js';
 import { encodeState, decodeState } from './share.js';
 import { spectrumBars, dominantFrequency } from './spectrum.js';
+import { curveToSvg } from './svg.js';
 
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
@@ -373,6 +374,37 @@ if (clearBtn) {
     } catch {
       window.location.hash = '';
     }
+  });
+}
+
+/** Points along the reconstructed curve, at plotter-friendly resolution. */
+function reconstructedCurve() {
+  return state.active.length ? tracePath(state.active, 1200) : [];
+}
+
+const downloadSvgBtn = $('downloadSvg');
+if (downloadSvgBtn) {
+  downloadSvgBtn.addEventListener('click', () => {
+    const curve = reconstructedCurve();
+    if (curve.length < 2) {
+      announce('Nothing to export yet — draw or pick a shape first.');
+      return;
+    }
+    const svg = curveToSvg(curve, {
+      stroke: state.colors.trace || '#2f6fed',
+      strokeWidth: 2,
+      title: `epicyclon — ${state.currentShape || 'drawing'}, ${state.active.length} circles`,
+    });
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `epicyclon-${state.currentShape || 'drawing'}.svg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    announce(`Exported an SVG of the curve with ${state.active.length} circles.`);
   });
 }
 
