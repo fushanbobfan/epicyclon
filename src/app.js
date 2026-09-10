@@ -7,6 +7,7 @@ import { attachDrawing } from './ui.js';
 import { encodeState, decodeState } from './share.js';
 import { spectrumBars, dominantFrequency } from './spectrum.js';
 import { curveToSvg } from './svg.js';
+import { rasterPlan } from './raster.js';
 
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
@@ -405,6 +406,66 @@ if (downloadSvgBtn) {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 0);
     announce(`Exported an SVG of the curve with ${state.active.length} circles.`);
+  });
+}
+
+/** Paint a raster plan onto a fresh offscreen canvas and return it. */
+function planToCanvas(plan) {
+  const out = document.createElement('canvas');
+  out.width = plan.width;
+  out.height = plan.height;
+  const octx = out.getContext('2d');
+  if (plan.background) {
+    octx.fillStyle = plan.background;
+    octx.fillRect(0, 0, plan.width, plan.height);
+  }
+  const pts = plan.polyline;
+  if (pts.length >= 2) {
+    octx.strokeStyle = plan.stroke;
+    octx.lineWidth = plan.strokeWidth;
+    octx.lineJoin = 'round';
+    octx.lineCap = 'round';
+    octx.beginPath();
+    octx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) octx.lineTo(pts[i].x, pts[i].y);
+    if (plan.closed) octx.closePath();
+    octx.stroke();
+  }
+  return out;
+}
+
+const downloadPngBtn = $('downloadPng');
+if (downloadPngBtn) {
+  downloadPngBtn.addEventListener('click', () => {
+    const curve = reconstructedCurve();
+    if (curve.length < 2) {
+      announce('Nothing to export yet — draw or pick a shape first.');
+      return;
+    }
+    const plan = rasterPlan(curve, {
+      pixelRatio: window.devicePixelRatio || 1,
+      background: state.colors.canvasBg || '#ffffff',
+      stroke: state.colors.trace || '#2f6fed',
+      strokeWidth: 2,
+    });
+    planToCanvas(plan).toBlob((blob) => {
+      if (!blob) {
+        announce('PNG export failed in this browser.');
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `epicyclon-${state.currentShape || 'drawing'}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+      announce(
+        `Exported a ${plan.width}×${plan.height} PNG of the curve with ` +
+          `${state.active.length} circles.`,
+      );
+    }, 'image/png');
   });
 }
 
