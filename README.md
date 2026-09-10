@@ -33,6 +33,7 @@ static server works too.
 | Clear | Empty the canvas to draw again |
 | Copy link | Put a permalink to the current view on the clipboard |
 | Download SVG | Save the reconstructed curve as a standalone vector file |
+| Download PNG | Save the reconstructed curve as a bitmap image |
 
 Below the canvas, a magnitude-spectrum strip shows the kept terms as bars,
 tallest first, so you can watch amplitude fall off as circles are added; its
@@ -62,6 +63,17 @@ source shape and circle count. Fewer circles export a smoother curve; more sharp
 the corners, exactly as on screen. The file opens in any vector editor and is
 suitable for a pen plotter.
 
+## Downloading a raster copy
+
+**Download PNG** paints the same reconstructed curve onto an offscreen canvas
+and saves it as a PNG. The bitmap is fitted to the drawing with a uniform
+margin, then scaled by the display's device pixel ratio so the line stays
+crisp on a high-DPI screen; the longest edge is capped so a large drawing can
+never request a gigapixel image. The page color and stroke follow the current
+light or dark theme. As with the SVG, fewer circles give a smoother curve and
+more sharpen the corners. Use this when you want an image to drop straight
+into a document or a chat rather than a vector file to edit.
+
 ## Tests
 
 ```bash
@@ -71,8 +83,9 @@ npm test
 The suite (`node --test`) covers the pure logic: the DFT and its
 reconstruction guarantee, the epicycle evaluation, arc-length resampling, the
 example-shape generators, the permalink encode/decode round trip, the spectrum
-reduction, and the SVG export (path data, viewBox fitting, escaping, and
-degenerate inputs). It has no dependencies.
+reduction, the SVG export (path data, viewBox fitting, escaping, and
+degenerate inputs), and the PNG export plan (bounds fitting, device scaling,
+size caps, and degenerate inputs). It has no dependencies.
 
 ## How it works
 
@@ -97,6 +110,7 @@ degenerate inputs). It has no dependencies.
 | `src/render.js` | Canvas drawing helpers and theme color lookup |
 | `src/spectrum.js` | Reduce a term set to magnitude-spectrum bars |
 | `src/svg.js` | Build a standalone SVG document from a traced curve |
+| `src/raster.js` | Plan a PNG export: fit, scale, and cap the bitmap |
 | `src/share.js` | Encode and decode the permalink hash |
 | `src/app.js` | State, animation loop, and control wiring |
 | `src/ui.js` | Pointer drawing capture |

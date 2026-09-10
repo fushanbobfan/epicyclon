@@ -130,6 +130,7 @@ export function readColors(el) {
   const get = (name, fallback) => s.getPropertyValue(name).trim() || fallback;
   return {
     trace: get('--trace', '#2f6fed'),
+    canvasBg: get('--canvas-bg', '#ffffff'),
     circle: get('--circle', 'rgba(0,0,0,0.18)'),
     radius: get('--radius', 'rgba(0,0,0,0.45)'),
     inputPath: get('--input-path', '#e8663a'),
