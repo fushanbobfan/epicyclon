@@ -34,6 +34,7 @@ static server works too.
 | Copy link | Put a permalink to the current view on the clipboard |
 | Download SVG | Save the reconstructed curve as a standalone vector file |
 | Download PNG | Save the reconstructed curve as a bitmap image |
+| Import SVG&hellip; | Trace an SVG file's path instead of drawing or picking a preset |
 
 Below the canvas, a magnitude-spectrum strip shows the kept terms as bars,
 tallest first, so you can watch amplitude fall off as circles are added; its
@@ -74,6 +75,20 @@ light or dark theme. As with the SVG, fewer circles give a smoother curve and
 more sharpen the corners. Use this when you want an image to drop straight
 into a document or a chat rather than a vector file to edit.
 
+## Importing an SVG
+
+**Import SVG&hellip;** is the reverse of **Download SVG**: pick a local `.svg` file and its
+path becomes the traced curve, the same as drawing a stroke or picking an example shape. Every
+`<path>` element is parsed and, when a file has more than one (or more than one subpath within
+one `M`&hellip;`Z`&hellip;`M`&hellip;`Z` string), the one with the largest bounding box is used —
+so a small decorative dot or a background rectangle drawn as a path doesn't win over the actual
+artwork. The path's `M`/`L`/`H`/`V`/`C`/`S`/`Q`/`T`/`Z` commands are supported, both absolute and
+relative; curves are flattened to short line segments before resampling, the same as a freehand
+stroke. Elliptical arcs (`A`) are approximated as a straight line to the arc's endpoint rather
+than a true arc, since most traceable artwork (logos, icons, simple line art) doesn't rely on
+them. The imported path is recentered and scaled to fit the canvas the same way a built-in
+example shape is, so its original position and size in the source file don't matter.
+
 ## Tests
 
 ```bash
@@ -84,8 +99,10 @@ The suite (`node --test`) covers the pure logic: the DFT and its
 reconstruction guarantee, the epicycle evaluation, arc-length resampling, the
 example-shape generators, the permalink encode/decode round trip, the spectrum
 reduction, the SVG export (path data, viewBox fitting, escaping, and
-degenerate inputs), and the PNG export plan (bounds fitting, device scaling,
-size caps, and degenerate inputs). It has no dependencies.
+degenerate inputs), the PNG export plan (bounds fitting, device scaling,
+size caps, and degenerate inputs), and the SVG import (path-command parsing,
+curve flattening, subpath selection, and centering/scaling). It has no
+dependencies.
 
 ## How it works
 
@@ -111,6 +128,7 @@ size caps, and degenerate inputs). It has no dependencies.
 | `src/spectrum.js` | Reduce a term set to magnitude-spectrum bars |
 | `src/svg.js` | Build a standalone SVG document from a traced curve |
 | `src/raster.js` | Plan a PNG export: fit, scale, and cap the bitmap |
+| `src/svgImport.js` | Parse an SVG path into a traceable, centered polyline |
 | `src/share.js` | Encode and decode the permalink hash |
 | `src/app.js` | State, animation loop, and control wiring |
 | `src/ui.js` | Pointer drawing capture |
