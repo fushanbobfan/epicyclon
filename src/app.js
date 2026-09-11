@@ -8,6 +8,7 @@ import { encodeState, decodeState } from './share.js';
 import { spectrumBars, dominantFrequency } from './spectrum.js';
 import { curveToSvg } from './svg.js';
 import { rasterPlan } from './raster.js';
+import { svgToPoints, fitToSpan } from './svgImport.js';
 
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
@@ -466,6 +467,38 @@ if (downloadPngBtn) {
           `${state.active.length} circles.`,
       );
     }, 'image/png');
+  });
+}
+
+const importSvgBtn = $('importSvg');
+const importSvgFile = $('importSvgFile');
+if (importSvgBtn && importSvgFile) {
+  importSvgBtn.addEventListener('click', () => importSvgFile.click());
+  importSvgFile.addEventListener('change', async () => {
+    const file = importSvgFile.files && importSvgFile.files[0];
+    importSvgFile.value = '';
+    if (!file) return;
+
+    let text;
+    try {
+      text = await file.text();
+    } catch {
+      announce('Could not read that file.');
+      return;
+    }
+
+    const raw = svgToPoints(text);
+    if (raw.length < 3) {
+      announce('No usable path found in that SVG.');
+      return;
+    }
+
+    const span = Math.min(state.viewW, state.viewH) * 0.62;
+    useStroke(fitToSpan(raw, span));
+    if (shapeSelect) shapeSelect.value = '';
+    if (hint) hint.textContent = 'SVG imported. Adjust the circle count to taste.';
+    announce(`Imported an SVG path with ${state.active.length} circles.`);
+    scheduleHashUpdate();
   });
 }
 
