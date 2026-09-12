@@ -77,12 +77,56 @@ test('parsePathData resolves S/T smooth curves by reflecting the prior control p
   assert.ok(Math.abs(last.x - 30) < 1e-9 && Math.abs(last.y - 0) < 1e-9);
 });
 
-test('parsePathData falls back to a straight line for arcs', () => {
+test('parsePathData flattens an arc into a curved polyline that bulges off the chord', () => {
+  // A semicircle of radius 5 from (0,0) to (10,0). Hand-verified against the
+  // SVG spec's endpoint-to-center formula: sweep=1 centers at (5,0) and
+  // bulges to (5,-5) at its midpoint.
   const subpaths = parsePathData('M0 0 A5 5 0 0 1 10 0');
+  const pts = subpaths[0];
+  assert.ok(pts.length > 10, 'an arc should produce many points');
+  const last = pts[pts.length - 1];
+  assert.ok(Math.abs(last.x - 10) < 1e-9 && Math.abs(last.y - 0) < 1e-6);
+  const mid = pts[Math.floor(pts.length / 2)];
+  assert.ok(Math.abs(mid.x - 5) < 0.5, `expected midpoint x near 5, got ${mid.x}`);
+  assert.ok(Math.abs(mid.y - -5) < 0.5, `expected midpoint y near -5, got ${mid.y}`);
+});
+
+test('parsePathData flips the arc to the other side when the sweep flag flips', () => {
+  const sweep1 = parsePathData('M0 0 A5 5 0 0 1 10 0')[0];
+  const sweep0 = parsePathData('M0 0 A5 5 0 0 0 10 0')[0];
+  const mid1 = sweep1[Math.floor(sweep1.length / 2)];
+  const mid0 = sweep0[Math.floor(sweep0.length / 2)];
+  assert.ok(mid1.y < 0, 'sweep=1 should bulge to negative y');
+  assert.ok(mid0.y > 0, 'sweep=0 should bulge to positive y');
+});
+
+test('parsePathData takes the long way around when the large-arc flag is set', () => {
+  // Radius 10 with a chord of only 10 leaves room for two different arcs
+  // (small: most of the way around; large: the rest). The large arc's
+  // midpoint should land much further from the chord than the small one's.
+  const small = parsePathData('M0 0 A10 10 0 0 1 10 0')[0];
+  const large = parsePathData('M0 0 A10 10 0 1 1 10 0')[0];
+  const smallMid = small[Math.floor(small.length / 2)];
+  const largeMid = large[Math.floor(large.length / 2)];
+  assert.ok(Math.abs(largeMid.y) > Math.abs(smallMid.y) + 1, `expected the large arc to bulge further: small y=${smallMid.y}, large y=${largeMid.y}`);
+});
+
+test('parsePathData falls back to a straight line for a degenerate arc', () => {
+  // Zero radius is explicitly a straight line per the SVG spec.
+  const subpaths = parsePathData('M0 0 A0 0 0 0 1 10 0');
   assert.deepEqual(subpaths[0], [
     { x: 0, y: 0 },
     { x: 10, y: 0 },
   ]);
+});
+
+test('parsePathData scales up an arc radius that is too small to reach its endpoint', () => {
+  // Radius 1 can't span a chord of length 10; the spec says to scale rx/ry
+  // up uniformly until it just barely can, rather than fail.
+  const subpaths = parsePathData('M0 0 A1 1 0 0 1 10 0');
+  const pts = subpaths[0];
+  const last = pts[pts.length - 1];
+  assert.ok(Math.abs(last.x - 10) < 1e-6 && Math.abs(last.y - 0) < 1e-6);
 });
 
 test('parsePathData starts a new subpath on every M', () => {
