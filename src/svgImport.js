@@ -5,10 +5,11 @@
 // way the built-in example shapes are, so it can go straight into
 // `resample` and then the DFT.
 //
-// Supports M/L/H/V/C/S/Q/T/Z (absolute and relative) and multiple subpaths
+// Supports M/L/H/V/C/S/Q/T/A/Z (absolute and relative) and multiple subpaths
 // (the largest by bounding-box area is used). Elliptical arcs (`A`) are
-// approximated as a straight line to the arc's endpoint, since a faithful
-// arc-to-bezier conversion isn't worth the complexity here.
+// flattened with the endpoint-to-center parameterization from the SVG spec
+// (appendix F.6), the same way cubic and quadratic curves are flattened to
+// line segments.
 
 const CURVE_SEGMENTS = 24;
 
@@ -175,11 +176,11 @@ export function parsePathData(d) {
         break;
       }
       case 'A': {
-        const x = nums[5];
-        const y = nums[6];
-        cx = relative ? cx + x : x;
-        cy = relative ? cy + y : y;
-        points.push({ x: cx, y: cy });
+        const [rx, ry, xAxisRotation, largeArcFlag, sweepFlag, x, y] = nums;
+        const end = { x: relative ? cx + x : x, y: relative ? cy + y : y };
+        appendArc(points, { x: cx, y: cy }, rx, ry, xAxisRotation, largeArcFlag, sweepFlag, end);
+        cx = end.x;
+        cy = end.y;
         break;
       }
     }
@@ -269,6 +270,73 @@ function appendQuad(points, p0, p1, p2) {
     points.push({
       x: a * p0.x + b * p1.x + c * p2.x,
       y: a * p0.y + b * p1.y + c * p2.y,
+    });
+  }
+}
+
+/**
+ * Flatten an SVG elliptical arc (`A`) into line segments using the
+ * endpoint-to-center parameterization from the SVG spec (appendix F.6.5).
+ * Degenerate input (zero radius, or a start point equal to the end point)
+ * falls back to a straight line, matching the spec's own fallback rules.
+ */
+function appendArc(points, start, rx, ry, xAxisRotationDeg, largeArcFlag, sweepFlag, end) {
+  rx = Math.abs(rx);
+  ry = Math.abs(ry);
+  if (rx === 0 || ry === 0 || (start.x === end.x && start.y === end.y)) {
+    points.push(end);
+    return;
+  }
+
+  const phi = ((xAxisRotationDeg % 360) + 360) % 360 * (Math.PI / 180);
+  const cosPhi = Math.cos(phi);
+  const sinPhi = Math.sin(phi);
+  const large = largeArcFlag !== 0;
+  const sweep = sweepFlag !== 0;
+
+  const dx2 = (start.x - end.x) / 2;
+  const dy2 = (start.y - end.y) / 2;
+  const x1p = cosPhi * dx2 + sinPhi * dy2;
+  const y1p = -sinPhi * dx2 + cosPhi * dy2;
+
+  const lambda = (x1p * x1p) / (rx * rx) + (y1p * y1p) / (ry * ry);
+  if (lambda > 1) {
+    const scale = Math.sqrt(lambda);
+    rx *= scale;
+    ry *= scale;
+  }
+
+  const rxSq = rx * rx;
+  const rySq = ry * ry;
+  const x1pSq = x1p * x1p;
+  const y1pSq = y1p * y1p;
+  const sign = large === sweep ? -1 : 1;
+  const num = Math.max(0, rxSq * rySq - rxSq * y1pSq - rySq * x1pSq);
+  const co = sign * Math.sqrt(num / (rxSq * y1pSq + rySq * x1pSq));
+  const cxp = (co * (rx * y1p)) / ry;
+  const cyp = (-co * (ry * x1p)) / rx;
+
+  const cx = cosPhi * cxp - sinPhi * cyp + (start.x + end.x) / 2;
+  const cy = sinPhi * cxp + cosPhi * cyp + (start.y + end.y) / 2;
+
+  const angle = (ux, uy, vx, vy) => {
+    const sgn = ux * vy - uy * vx < 0 ? -1 : 1;
+    const dot = Math.max(-1, Math.min(1, (ux * vx + uy * vy) / Math.hypot(ux, uy) / Math.hypot(vx, vy)));
+    return sgn * Math.acos(dot);
+  };
+
+  const theta1 = angle(1, 0, (x1p - cxp) / rx, (y1p - cyp) / ry);
+  let dtheta = angle((x1p - cxp) / rx, (y1p - cyp) / ry, (-x1p - cxp) / rx, (-y1p - cyp) / ry);
+  if (!sweep && dtheta > 0) dtheta -= 2 * Math.PI;
+  if (sweep && dtheta < 0) dtheta += 2 * Math.PI;
+
+  for (let i = 1; i <= CURVE_SEGMENTS; i++) {
+    const theta = theta1 + (dtheta * i) / CURVE_SEGMENTS;
+    const cosTheta = Math.cos(theta);
+    const sinTheta = Math.sin(theta);
+    points.push({
+      x: cx + rx * cosPhi * cosTheta - ry * sinPhi * sinTheta,
+      y: cy + rx * sinPhi * cosTheta + ry * cosPhi * sinTheta,
     });
   }
 }
