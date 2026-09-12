@@ -82,12 +82,11 @@ path becomes the traced curve, the same as drawing a stroke or picking an exampl
 `<path>` element is parsed and, when a file has more than one (or more than one subpath within
 one `M`&hellip;`Z`&hellip;`M`&hellip;`Z` string), the one with the largest bounding box is used —
 so a small decorative dot or a background rectangle drawn as a path doesn't win over the actual
-artwork. The path's `M`/`L`/`H`/`V`/`C`/`S`/`Q`/`T`/`Z` commands are supported, both absolute and
-relative; curves are flattened to short line segments before resampling, the same as a freehand
-stroke. Elliptical arcs (`A`) are approximated as a straight line to the arc's endpoint rather
-than a true arc, since most traceable artwork (logos, icons, simple line art) doesn't rely on
-them. The imported path is recentered and scaled to fit the canvas the same way a built-in
-example shape is, so its original position and size in the source file don't matter.
+artwork. The path's `M`/`L`/`H`/`V`/`C`/`S`/`Q`/`T`/`A`/`Z` commands are supported, both absolute
+and relative; curves and arcs alike are flattened to short line segments before resampling, the
+same as a freehand stroke. The imported path is recentered and scaled to fit the canvas the same
+way a built-in example shape is, so its original position and size in the source file don't
+matter.
 
 ## Tests
 
