@@ -34,6 +34,7 @@ static server works too.
 | Copy link | Put a permalink to the current view on the clipboard |
 | Download SVG | Save the reconstructed curve as a standalone vector file |
 | Download PNG | Save the reconstructed curve as a bitmap image |
+| Download audio | Save the curve as a stereo WAV file — play it through an oscilloscope in X-Y mode to redraw it (see below) |
 | Import SVG&hellip; | Trace an SVG file's path instead of drawing or picking a preset |
 
 Below the canvas, a magnitude-spectrum strip shows the kept terms as bars,
@@ -75,6 +76,26 @@ light or dark theme. As with the SVG, fewer circles give a smoother curve and
 more sharpen the corners. Use this when you want an image to drop straight
 into a document or a chat rather than a vector file to edit.
 
+## Downloading a stereo audio copy
+
+SVG and PNG both draw the curve; **Download audio** plays it instead.
+[`src/wav.js`](src/wav.js) samples the pen position at audio rate and writes it
+as a two-channel WAV file — the left channel is `x(t)`, the right is `y(t)` —
+the same signal an oscilloscope running in X-Y mode (or "oscilloscope music"
+software emulating one) turns back into the curve on its own screen, tracing
+out the shape from sound instead of a stylus.
+
+Both axes share one scale factor, measured once from a dense one-loop trace of
+the curve and reused for every audio-rate sample: the curve is periodic, so its
+bounds are the same on every loop, and scaling `x` and `y` by the same amount
+(rather than independently stretching each to fill \[-1, 1]) keeps the shape's
+aspect ratio intact on the oscilloscope the way it already is on the canvas. A
+small padding fraction keeps the signal just short of the full ±1 range so it
+doesn't ride the raw clip point. `encodeWav` then writes the standard 44-byte
+PCM header (format, channel count, sample rate, bit depth) followed by the
+interleaved 16-bit samples — no compression, no external library, openable in
+any audio editor or player.
+
 ## Importing an SVG
 
 **Import SVG&hellip;** is the reverse of **Download SVG**: pick a local `.svg` file and its
@@ -99,9 +120,12 @@ reconstruction guarantee, the epicycle evaluation, arc-length resampling, the
 example-shape generators, the permalink encode/decode round trip, the spectrum
 reduction, the SVG export (path data, viewBox fitting, escaping, and
 degenerate inputs), the PNG export plan (bounds fitting, device scaling,
-size caps, and degenerate inputs), and the SVG import (path-command parsing,
-curve flattening, subpath selection, and centering/scaling). It has no
-dependencies.
+size caps, and degenerate inputs), the SVG import (path-command parsing,
+curve flattening, subpath selection, and centering/scaling), and the WAV
+export (sample count, the [-1, 1] range, aspect-preserving uniform scaling on
+a near-degenerate curve, periodicity, loop-rate scaling, and the PCM header
+and sample encoding, including a round trip back to the exact int16 values).
+It has no dependencies.
 
 ## How it works
 
@@ -128,6 +152,7 @@ dependencies.
 | `src/svg.js` | Build a standalone SVG document from a traced curve |
 | `src/raster.js` | Plan a PNG export: fit, scale, and cap the bitmap |
 | `src/svgImport.js` | Parse an SVG path into a traceable, centered polyline |
+| `src/wav.js` | Sample the curve as stereo audio and encode it as a WAV file |
 | `src/share.js` | Encode and decode the permalink hash |
 | `src/app.js` | State, animation loop, and control wiring |
 | `src/ui.js` | Pointer drawing capture |

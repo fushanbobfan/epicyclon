@@ -9,6 +9,7 @@ import { spectrumBars, dominantFrequency } from './spectrum.js';
 import { curveToSvg } from './svg.js';
 import { rasterPlan } from './raster.js';
 import { svgToPoints, fitToSpan } from './svgImport.js';
+import { stereoSamples, encodeWav } from './wav.js';
 
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d');
@@ -467,6 +468,31 @@ if (downloadPngBtn) {
           `${state.active.length} circles.`,
       );
     }, 'image/png');
+  });
+}
+
+const downloadWavBtn = $('downloadWav');
+if (downloadWavBtn) {
+  downloadWavBtn.addEventListener('click', () => {
+    if (!state.active.length) {
+      announce('Nothing to export yet — draw or pick a shape first.');
+      return;
+    }
+    const signal = stereoSamples(state.active, { durationSeconds: 6, loopsPerSecond: 1 });
+    const bytes = encodeWav(signal);
+    const blob = new Blob([bytes], { type: 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `epicyclon-${state.currentShape || 'drawing'}.wav`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    announce(
+      `Exported 6 seconds of audio: the left channel traces x, the right traces y — play it ` +
+        `through an oscilloscope in X-Y mode to redraw the curve.`,
+    );
   });
 }
 
