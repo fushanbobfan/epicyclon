@@ -7,6 +7,7 @@ import { attachDrawing } from './ui.js';
 import { encodeState, decodeState } from './share.js';
 import { spectrumBars, dominantFrequency } from './spectrum.js';
 import { curveToSvg } from './svg.js';
+import { curveToAnimatedSvg } from './animatedSvg.js';
 import { rasterPlan } from './raster.js';
 import { svgToPoints, fitToSpan } from './svgImport.js';
 import { stereoSamples, encodeWav } from './wav.js';
@@ -408,6 +409,35 @@ if (downloadSvgBtn) {
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 0);
     announce(`Exported an SVG of the curve with ${state.active.length} circles.`);
+  });
+}
+
+const downloadAnimatedSvgBtn = $('downloadAnimatedSvg');
+if (downloadAnimatedSvgBtn) {
+  downloadAnimatedSvgBtn.addEventListener('click', () => {
+    const curve = reconstructedCurve();
+    if (curve.length < 2) {
+      announce('Nothing to export yet — draw or pick a shape first.');
+      return;
+    }
+    const svg = curveToAnimatedSvg(curve, {
+      stroke: state.colors.trace || '#2f6fed',
+      strokeWidth: 2,
+      // Matches the same loop duration the live canvas is currently animating at, so the
+      // downloaded file replays at the speed it was drawn.
+      durationSeconds: LOOP_SECONDS / Math.max(state.speed, 0.05),
+      title: `epicyclon — ${state.currentShape || 'drawing'}, ${state.active.length} circles (animated)`,
+    });
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `epicyclon-${state.currentShape || 'drawing'}-animated.svg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    announce(`Exported an animated SVG of the curve with ${state.active.length} circles.`);
   });
 }
 
