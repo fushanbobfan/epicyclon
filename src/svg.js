@@ -96,7 +96,7 @@ export function pathData(pts, precision = 2, closed = true) {
 }
 
 /** Axis-aligned bounds of a point list, with a minimum 1x1 extent. */
-function boundsOf(pts) {
+export function boundsOf(pts) {
   if (pts.length === 0) {
     return { minX: 0, minY: 0, w: 1, h: 1 };
   }
@@ -118,20 +118,20 @@ function boundsOf(pts) {
   };
 }
 
-function clampPrecision(value) {
+export function clampPrecision(value) {
   if (!Number.isFinite(value)) return 2;
   return Math.min(6, Math.max(0, Math.floor(value)));
 }
 
-function round(value, precision) {
+export function round(value, precision) {
   const f = 10 ** precision;
   return Math.round(value * f) / f;
 }
 
-function escapeText(s) {
+export function escapeText(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function escapeAttr(s) {
+export function escapeAttr(s) {
   return escapeText(s).replace(/"/g, '&quot;');
 }

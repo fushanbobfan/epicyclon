@@ -33,6 +33,7 @@ static server works too.
 | Clear | Empty the canvas to draw again |
 | Copy link | Put a permalink to the current view on the clipboard |
 | Download SVG | Save the reconstructed curve as a standalone vector file |
+| Download animated SVG | Save the curve as a self-contained SVG that loops the pen motion on its own |
 | Download PNG | Save the reconstructed curve as a bitmap image |
 | Download audio | Save the curve as a stereo WAV file — play it through an oscilloscope in X-Y mode to redraw it (see below) |
 | Import SVG&hellip; | Trace an SVG file's path instead of drawing or picking a preset |
@@ -64,6 +65,19 @@ stroke picks up the current theme's trace color, and the `<title>` records the
 source shape and circle count. Fewer circles export a smoother curve; more sharpen
 the corners, exactly as on screen. The file opens in any vector editor and is
 suitable for a pen plotter.
+
+## Downloading an animated vector copy
+
+**Download SVG** freezes the curve; **Download animated SVG** keeps it moving.
+[`src/animatedSvg.js`](src/animatedSvg.js) reuses the exact same bounds/padding/precision
+framing as the static export, then adds a small dot driven by SMIL's `<animateMotion>` along
+the identical path data the guide curve (drawn faint, so the moving dot reads as the focal
+point) already uses — same start point, same direction, and, since the path is closed, a
+seamless loop with no jump when it wraps around. `dur` is set from the same loop-duration math
+the live canvas animation already uses, scaled by the current **Speed** setting, so the file
+replays at whatever speed it was exported at. The whole thing is self-contained SVG+SMIL: no
+external script, stylesheet, or JavaScript runtime needed to see it move — it animates on its
+own the moment it's opened in a browser or any other SVG-aware viewer.
 
 ## Downloading a raster copy
 
@@ -119,7 +133,11 @@ The suite (`node --test`) covers the pure logic: the DFT and its
 reconstruction guarantee, the epicycle evaluation, arc-length resampling, the
 example-shape generators, the permalink encode/decode round trip, the spectrum
 reduction, the SVG export (path data, viewBox fitting, escaping, and
-degenerate inputs), the PNG export plan (bounds fitting, device scaling,
+degenerate inputs), the animated SVG export (identical framing to the static
+export, the animated dot's motion path matching the guide path's `d`
+attribute exactly, duration/pen-radius configuration and their fallbacks for
+invalid values, and the same escaping/degenerate-input properties), the PNG
+export plan (bounds fitting, device scaling,
 size caps, and degenerate inputs), the SVG import (path-command parsing,
 curve flattening, subpath selection, and centering/scaling), and the WAV
 export (sample count, the [-1, 1] range, aspect-preserving uniform scaling on
@@ -150,6 +168,7 @@ It has no dependencies.
 | `src/render.js` | Canvas drawing helpers and theme color lookup |
 | `src/spectrum.js` | Reduce a term set to magnitude-spectrum bars |
 | `src/svg.js` | Build a standalone SVG document from a traced curve |
+| `src/animatedSvg.js` | Build a standalone, self-animating SVG that traces the curve on a loop |
 | `src/raster.js` | Plan a PNG export: fit, scale, and cap the bitmap |
 | `src/svgImport.js` | Parse an SVG path into a traceable, centered polyline |
 | `src/wav.js` | Sample the curve as stereo audio and encode it as a WAV file |
