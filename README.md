@@ -25,7 +25,7 @@ static server works too.
 | Control | Effect |
 | --- | --- |
 | Draw on the canvas | Replace the traced path with your own closed stroke |
-| Example shape | Load a built-in shape (circle, square, star, heart, Lissajous) |
+| Example shape | Load a built-in shape (circle, square, star, heart, Lissajous, infinity) |
 | Circles | How many Fourier terms to keep, largest amplitude first |
 | Speed | Loop rate, from a still frame up to 3x |
 | Circles / Radii / Original path | Toggle each drawn layer |
