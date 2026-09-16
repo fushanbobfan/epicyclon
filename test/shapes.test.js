@@ -7,6 +7,7 @@ import {
   star,
   heart,
   lissajous,
+  infinity,
   sampleClosed,
   walkPolygon,
 } from '../src/shapes.js';
@@ -87,6 +88,20 @@ test('heart is wider at the top than at the bottom tip', () => {
 test('lissajous stays within its bounding size', () => {
   const b = bbox(lissajous(500, 300));
   assert.ok(b.w <= 300 + 1e-9 && b.h <= 300 + 1e-9);
+});
+
+test('infinity is a figure eight: about twice as wide as it is tall, crossing through the origin', () => {
+  const pts = infinity(500, 200);
+  const b = bbox(pts);
+  // x = a*cos(t) reaches its full +-a extent exactly at the sampled t = 0, but y = (a/2)*sin(2t)
+  // only reaches close to its +-a/2 extent, since none of the 500 sample points land exactly on
+  // t = pi/4 — hence an exact width but an approximate (very slightly short) height.
+  assert.ok(Math.abs(b.w - 200) < 1e-9);
+  assert.ok(b.h > 95 && b.h <= 100);
+  // The curve crosses itself at the origin twice per loop, at t = pi/2 and t = 3pi/2, both of
+  // which land exactly on a sample point for a count divisible by 4.
+  const minDist = Math.min(...pts.map((p) => Math.hypot(p.x, p.y)));
+  assert.ok(minDist < 1e-6);
 });
 
 test('sampleClosed does not repeat the closing point', () => {
