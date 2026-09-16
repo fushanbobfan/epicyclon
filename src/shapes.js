@@ -62,12 +62,22 @@ export function lissajous(count, size = 200) {
   }));
 }
 
+/** Figure-eight (lemniscate of Gerono), traced as a single closed loop. */
+export function infinity(count, size = 200) {
+  const a = size / 2;
+  return sampleClosed(count, (t) => ({
+    x: a * Math.cos(t),
+    y: (a / 2) * Math.sin(2 * t),
+  }));
+}
+
 export const SHAPES = {
   circle: { label: 'Circle', generate: circle },
   square: { label: 'Square', generate: square },
   star: { label: 'Star', generate: star },
   heart: { label: 'Heart', generate: heart },
   lissajous: { label: 'Lissajous', generate: lissajous },
+  infinity: { label: 'Infinity', generate: infinity },
 };
 
 /** Sample a closed parametric curve at `count` evenly spaced parameter values. */
