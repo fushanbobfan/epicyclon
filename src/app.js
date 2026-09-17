@@ -10,6 +10,7 @@ import { curveToSvg } from './svg.js';
 import { curveToAnimatedSvg } from './animatedSvg.js';
 import { rasterPlan } from './raster.js';
 import { svgToPoints, fitToSpan } from './svgImport.js';
+import { traceImage } from './imageTrace.js';
 import { stereoSamples, encodeWav } from './wav.js';
 
 const canvas = document.getElementById('stage');
@@ -554,6 +555,60 @@ if (importSvgBtn && importSvgFile) {
     if (shapeSelect) shapeSelect.value = '';
     if (hint) hint.textContent = 'SVG imported. Adjust the circle count to taste.';
     announce(`Imported an SVG path with ${state.active.length} circles.`);
+    scheduleHashUpdate();
+  });
+}
+
+// Longest side the traced bitmap is downscaled to before thresholding: enough
+// detail for a clean silhouette, few enough pixels that tracing is instant.
+const TRACE_MAX_SIDE = 400;
+
+/** Decode an image file and return its pixels, downscaled to TRACE_MAX_SIDE. */
+async function imageFileToPixels(file) {
+  const bitmap = await createImageBitmap(file);
+  try {
+    const scale = Math.min(1, TRACE_MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+    const off = document.createElement('canvas');
+    off.width = w;
+    off.height = h;
+    const ctx = off.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    return ctx.getImageData(0, 0, w, h);
+  } finally {
+    bitmap.close();
+  }
+}
+
+const traceImageBtn = $('traceImage');
+const traceImageFile = $('traceImageFile');
+if (traceImageBtn && traceImageFile) {
+  traceImageBtn.addEventListener('click', () => traceImageFile.click());
+  traceImageFile.addEventListener('change', async () => {
+    const file = traceImageFile.files && traceImageFile.files[0];
+    traceImageFile.value = '';
+    if (!file) return;
+
+    let pixels;
+    try {
+      pixels = await imageFileToPixels(file);
+    } catch {
+      announce('Could not decode that image.');
+      return;
+    }
+
+    const raw = traceImage(pixels);
+    if (raw.length < 3) {
+      announce('No shape found in that image. Try one with a single dark shape on a light background.');
+      return;
+    }
+
+    const span = Math.min(state.viewW, state.viewH) * 0.62;
+    useStroke(fitToSpan(raw, span));
+    if (shapeSelect) shapeSelect.value = '';
+    if (hint) hint.textContent = 'Image traced. Adjust the circle count to taste.';
+    announce(`Traced an image outline with ${state.active.length} circles.`);
     scheduleHashUpdate();
   });
 }
