@@ -123,6 +123,23 @@ same as a freehand stroke. The imported path is recentered and scaled to fit the
 way a built-in example shape is, so its original position and size in the source file don't
 matter.
 
+## Tracing an image
+
+**Trace image&hellip;** does for a bitmap what **Import SVG&hellip;** does for vector art: pick a
+PNG, JPEG, GIF, WebP or BMP and the outline of the main shape in it becomes the traced curve.
+It works best on a single solid shape against a plain background — a logo, a silhouette, a
+letter, a hand-drawn blob photographed on white paper.
+
+The image is downscaled to at most 400 pixels on its longest side and thresholded into a
+foreground mask. If the image has any transparent pixels, opacity decides what is foreground;
+otherwise dark pixels do, unless the border of the image is mostly dark, in which case the
+light pixels are taken to be the shape instead. Only the largest connected blob is kept, so
+specks, noise and a second smaller shape are ignored. Its boundary is then walked pixel by
+pixel and simplified (Ramer–Douglas–Peucker, one pixel of tolerance) so the curve follows the
+shape's real corners and curves rather than a staircase of pixel edges. The result is
+recentered and scaled to fit the canvas exactly like an imported SVG. Holes inside the shape
+are not traced — only the outer silhouette is.
+
 ## Tests
 
 ```bash
@@ -139,7 +156,10 @@ attribute exactly, duration/pen-radius configuration and their fallbacks for
 invalid values, and the same escaping/degenerate-input properties), the PNG
 export plan (bounds fitting, device scaling,
 size caps, and degenerate inputs), the SVG import (path-command parsing,
-curve flattening, subpath selection, and centering/scaling), and the WAV
+curve flattening, subpath selection, and centering/scaling), the image tracing
+(luminance and alpha thresholding, the auto-invert border heuristic, largest-blob
+selection, boundary walking on rectangles, lines, discs and edge-touching shapes,
+and Douglas–Peucker simplification of open and closed outlines), and the WAV
 export (sample count, the [-1, 1] range, aspect-preserving uniform scaling on
 a near-degenerate curve, periodicity, loop-rate scaling, and the PCM header
 and sample encoding, including a round trip back to the exact int16 values).
@@ -171,6 +191,7 @@ It has no dependencies.
 | `src/animatedSvg.js` | Build a standalone, self-animating SVG that traces the curve on a loop |
 | `src/raster.js` | Plan a PNG export: fit, scale, and cap the bitmap |
 | `src/svgImport.js` | Parse an SVG path into a traceable, centered polyline |
+| `src/imageTrace.js` | Threshold a bitmap, keep its largest blob and trace its outline |
 | `src/wav.js` | Sample the curve as stereo audio and encode it as a WAV file |
 | `src/share.js` | Encode and decode the permalink hash |
 | `src/app.js` | State, animation loop, and control wiring |
