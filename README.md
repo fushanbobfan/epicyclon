@@ -5,6 +5,8 @@ Draw a shape with your mouse or finger, and watch a chain of rotating circles
 transform; each circle is one frequency component, spinning at a constant rate
 with a fixed radius and starting angle.
 
+**Live demo:** https://fushanbobfan.github.io/epicyclon/
+
 It runs entirely in the browser with no build step and no dependencies. The
 math core is plain ES modules and is covered by a Node test suite.
 
